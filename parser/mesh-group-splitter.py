@@ -17,6 +17,7 @@ def splitSegmentedMesh():
         print("Please give a file name as an argument")
         return
         
+    labelCount = [0, 0, 0, 0]
 
     vertexList = []
     groupObjects = []
@@ -77,8 +78,13 @@ def splitSegmentedMesh():
 
         #print("finished group: ", len(groupObjects))
 
+        label = int(findLabels()[len(groupObjects)-1])
+        labelList = ["back", "seat", "leg", "armrest"]
+        labelCount[label] += 1
+        
+
         #file name
-        newFileName = "./splitFiles/" + os.path.basename(sys.argv[1]).split(".")[0] + "-" + str(len(groupObjects)) + ".obj"
+        newFileName = "./splitFiles/" + os.path.basename(sys.argv[1]).split(".")[0] + "-" + str(len(groupObjects)) + labelList[label] + str(labelCount[label]) + ".obj"
 
         Path("./splitFiles").mkdir(parents=True, exist_ok=True)
 
@@ -89,20 +95,25 @@ def splitSegmentedMesh():
         localFaceList = []
         localVertexList = []
 
-    #grassdata = GRASSDataset('chair',3)
-    #for i in range(len(grassdata)):
-    #    boxes = decode_structure(grassdata[i].root)
-    #    showGenshape(boxes)
+#Finds the semantic labels for the segments of the given model file
+def findLabels():
 
+    readFile = open(os.path.dirname(os.path.dirname(sys.argv[1]))+'/obbs/'+os.path.basename(sys.argv[1]).split(".")[0]+'.obb', "r")
 
-# def safeIndex(listIn, val):
-#     try:
-#         index_val = listIn.index(val)
-#     except ValueError:
-#         index_val = -1
-#     return index_val
+    line = readFile.readline()
 
+    while(line != '' and line[0] != 'L'):
+        line = readFile.readline()
 
+    line = readFile.readline()
+
+    labels = []
+
+    while(line != ''):
+        labels.append(line.split()[0])
+        line = readFile.readline()
+
+    return labels
 
 if __name__ == "__main__":
     splitSegmentedMesh()
