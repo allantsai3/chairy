@@ -130,3 +130,6 @@ dmypy.json
 
 # split model files
 /parser/splitFiles
+
+# vscode folders
+.vscode
