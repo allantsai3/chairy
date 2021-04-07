@@ -22,7 +22,7 @@ def reconstruct_obj(part_list):
         os.makedirs(directory)
     f = open("./tmp_output/output_mesh.obj", "w")
 
-    vertexCount = 0
+    vertex_count = 0
     for num, part in enumerate(part_list):
         f.write("g " + str(num) + "\n")
         vertices = part.get_vertices()
@@ -32,16 +32,19 @@ def reconstruct_obj(part_list):
 
         faces = part.get_faces()
         for face in faces:
-            f.write("f " + str(int(face[0])+vertexCount) + " " + str(int(face[1])+vertexCount) + " " + str(int(face[2])+vertexCount) + "\n")
+            f.write("f " + str(int(face[0]) + vertex_count) + " "
+                    + str(int(face[1]) + vertex_count) + " "
+                    + str(int(face[2]) + vertex_count) + "\n")
 
-        vertexCount += len(vertices)
+        vertex_count += len(vertices)
+
 
 if __name__ == "__main__":
     dataDir = sys.argv[1]
 
     sub_folders = [name for name in os.listdir(dataDir) if os.path.isdir(os.path.join(dataDir, name))]
 
-    random.seed(23)
+    # random.seed(23)
     index = random.choices(range(len(sub_folders)), k=4)
 
     chosenParts = [sub_folders[part] for part in index]
@@ -53,7 +56,6 @@ if __name__ == "__main__":
 
     # Choose the chair_seat, chair_back, chair_base, chair_arm
     for i, part in enumerate(chosenParts):
-        print(i)
         with open(os.path.join(dataDir, part, "result_after_merging.json")) as json_file:
             try:
                 data = json.load(json_file)
@@ -77,7 +79,6 @@ if __name__ == "__main__":
 
                 if partName == 'chair_arm' and i == 3:
                     partsList.append(Part(obj["objs"], obj_Files))
-
 
     # Combine the various part vertices/faces and then output obj files
     reconstruct_obj(partsList)

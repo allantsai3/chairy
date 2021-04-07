@@ -23,7 +23,7 @@ class Part(object):
 
     def load_part(self, file_list, obj_file_loc):
         for file in file_list:
-            ## Extracted from https://inareous.github.io/posts/opening-obj-using-py
+            # Extracted from https://inareous.github.io/posts/opening-obj-using-py
             try:
                 f = open(os.path.join(obj_file_loc, file + ".obj"))
                 for line in f:
