@@ -22,15 +22,19 @@ def reconstruct_obj(part_list):
         os.makedirs(directory)
     f = open("./tmp_output/output_mesh.obj", "w")
 
+    vertexCount = 0
     for num, part in enumerate(part_list):
         f.write("g " + str(num) + "\n")
         vertices = part.get_vertices()
+        
         for vertex in vertices:
             f.write("v " + str(vertex[0]) + " " + str(vertex[1]) + " " + str(vertex[2]) + "\n")
+
         faces = part.get_faces()
         for face in faces:
-            f.write("f " + str(face[0]) + " " + str(face[1]) + " " + str(face[2]) + "\n")
+            f.write("f " + str(int(face[0])+vertexCount) + " " + str(int(face[1])+vertexCount) + " " + str(int(face[2])+vertexCount) + "\n")
 
+        vertexCount += len(vertices)
 
 if __name__ == "__main__":
     dataDir = sys.argv[1]
