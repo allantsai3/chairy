@@ -3,6 +3,9 @@ import os
 import random
 import json
 from Part import Part
+import matplotlib.pyplot as plt
+import numpy as np
+from mpl_toolkits.mplot3d import Axes3D
 """
 Axioms for chair:
  - Something that can be sit on (has a base)
@@ -13,6 +16,16 @@ Axioms for chair:
     Input: set of 3D parts and labels
     Output: Generated 3D model (and also orthogonal projection in multiple views)
 """
+
+
+def plot_bounding_box(bounding_box):
+    input_data = np.array(bounding_box)
+    x, y, z = input_data.T
+
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    ax.plot(x, y, z, color='C0')
+    plt.show()
 
 
 def reconstruct_obj(part_list):
