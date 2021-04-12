@@ -3,6 +3,7 @@ import os
 import random
 import json
 import cv2
+import argparse
 from Part import Part
 import matplotlib.pyplot as plt
 import numpy as np
@@ -73,9 +74,18 @@ def reconstruct_obj(part_list):
 
 
 if __name__ == "__main__":
-    dataDir = sys.argv[1]
+    parser = argparse.ArgumentParser(description='Chairs directory')
+    parser.add_argument("--dir", required=True)
 
-    sub_folders = [name for name in os.listdir(dataDir) if os.path.isdir(os.path.join(dataDir, name))]
+    args = parser.parse_args()
+
+    if not args.dir:
+        print('Need to provide chair directory in run configurations')
+        exit(-1)
+
+    data_dir = args.dir
+
+    sub_folders = [name for name in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, name))]
 
     # random.seed(23)
     # random.seed(80)
@@ -92,7 +102,7 @@ if __name__ == "__main__":
 
     # Choose the chair_seat, chair_back, chair_base, chair_arm
     for i, part in enumerate(chosenParts):
-        with open(os.path.join(dataDir, part, "result_after_merging.json")) as json_file:
+        with open(os.path.join(data_dir, part, "result_after_merging.json")) as json_file:
             try:
                 data = json.load(json_file)
             except ValueError:
@@ -100,7 +110,7 @@ if __name__ == "__main__":
             except IOError:
                 print('IOError')
 
-            obj_Files = os.path.join(dataDir, part, "objs")
+            obj_Files = os.path.join(data_dir, part, "objs")
 
             for obj in data[0]['children']:
                 partName = obj['name']
