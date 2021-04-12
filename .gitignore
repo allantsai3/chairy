@@ -129,4 +129,4 @@ dmypy.json
 .pyre/
 
 # Mixer output file
-/tmp_output
+/tmp_mixer_output
