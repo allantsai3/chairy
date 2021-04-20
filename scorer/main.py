@@ -1,12 +1,12 @@
-from . import binvox_rw
 from .model import get_model, train_model
 from pathlib import Path
+from pprint import pprint
+from . import binvox_rw
 import argparse
 import numpy as np
 import tensorflow as tf
 
-# import tensorflow_datasets as tfds
-# import chairy_dataset
+import tensorflow_datasets as tfds
 
 def is_chair(path: Path) -> bool:
     return 'nonchair' not in path.parent.name
@@ -56,18 +56,21 @@ if __name__ == '__main__':
     chair_paths = []
     nonchair_paths = []
 
-    if not args.dir:
-        print('Need to provide chair directory')
+    if not args.dir and not args.train:
+        print('Need to provide volume directory for evaluation.')
         exit(-1)
 
-    paths = list(Path(args.dir).glob('**/*.binvox'))
-    rnd = np.random.default_rng(12345)
-    rnd.shuffle(paths)
-    volumes, labels = batch_read_binvox(paths[:3000])
-    volumes = np.expand_dims(volumes, axis=4)
-    dataset = tf.data.Dataset.from_tensor_slices((volumes, labels))
-
-    # dataset = tfds.load('chairy_dataset')
+    if args.train and not args.dir:
+        dataset = tfds.load('chairy_dataset',
+                            split=['train'],
+                            as_supervised=True)[0]
+    else:
+        paths = list(Path(args.dir).glob('**/*.binvox'))
+        rnd = np.random.default_rng(12345)
+        rnd.shuffle(paths)
+        volumes, labels = batch_read_binvox(paths[:3000])
+        volumes = np.expand_dims(volumes, axis=4)
+        dataset = tf.data.Dataset.from_tensor_slices((volumes, labels))
 
     model = get_model()
     if args.train:
@@ -75,4 +78,5 @@ if __name__ == '__main__':
         train_model(model, dataset)
     else:
         model.load_weights(args.load)
-        # model.predict()
+        result = model.predict(dataset)
+        pprint(result)

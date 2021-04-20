@@ -73,7 +73,7 @@ def train_model(model: keras.Model, dataset: tf.data.Dataset):
     test_dataset = test_dataset.prefetch(tf.data.experimental.AUTOTUNE)
 
     train_dataset = dataset.skip(test_size)
-    train_dataset = train_dataset.shuffle(len(train_dataset))
+    train_dataset = train_dataset.shuffle(2048)
     train_dataset = train_dataset.batch(2)
     train_dataset = train_dataset.prefetch(tf.data.experimental.AUTOTUNE)
 
