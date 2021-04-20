@@ -100,22 +100,28 @@ if __name__ == "__main__":
 
     sub_folders = [name for name in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, name))]
 
+    # -------- TESTING ------------
     # random.seed(23)
     # random.seed(80)
     # random.seed(346)  # change data[chosenParts[1]]["chair_back"][0] on line 131 to
     #                       data[chosenParts[1]]["chair_back"][3]
+    #
+    # -------- TESTING ------------
     index = random.choices(range(len(sub_folders)), k=4)
+    chosenParts = [sub_folders[part] for part in index]
 
-    # chosenParts = [sub_folders[part] for part in index]
-    chosenParts = ['172', sub_folders[index[1]], '173', '178']
+    # -------- TESTING ------------
+    # chosenParts = ['172', sub_folders[index[1]], '173', '178']
     # issue with part '41542'
-    # chosenParts = ['172', '176', '173', '178']
+    # chosenParts = ['172', '41542', '173', '178']
     # chosenParts = ['35824', '43115', '41157', '42831']
+    # -------- TESTING ------------
 
     print("Chosen parts are from folder:")
     print(chosenParts)
 
     parts_list = {}
+    ref_parts_list = {}
 
     """
     {
@@ -128,24 +134,26 @@ if __name__ == "__main__":
     chair_bases = {}
 
     # Choose the chair_seat, chair_back, chair_base, chair_arm
-    for i, part in enumerate(chosenParts):
-        with open(os.path.join(data_dir, part, "result_after_merging.json")) as json_file:
+    for i, part_id in enumerate(chosenParts):
+        with open(os.path.join(data_dir, part_id, "result_after_merging.json")) as json_file:
             try:
                 mergedData = json.load(json_file)
             except ValueError:
-                print(part)
+                print(part_id)
             except IOError:
                 print('IOError')
 
-            obj_Files = os.path.join(data_dir, part, "objs")
+            obj_Files = os.path.join(data_dir, part_id, "objs")
 
             for obj in mergedData[0]['children']:
                 partName = obj['name']
-                if partName == 'chair_seat' and i == 0:
-                    parts_list[partName] = Part(obj["objs"], obj_Files)
+                if i == 0:
+                    ref_parts_list[partName] = Part(obj["objs"], obj_Files, part_id)
+                    if partName == 'chair_seat':
+                        parts_list[partName] = Part(obj["objs"], obj_Files, part_id)
 
                 if partName == 'chair_back' and i == 1:
-                    parts_list[partName] = Part(obj["objs"], obj_Files)
+                    parts_list[partName] = Part(obj["objs"], obj_Files, part_id)
 
                 if partName == 'chair_base':
                     if i == 0:
@@ -160,11 +168,20 @@ if __name__ == "__main__":
 
                 # TODO: Need to split arms into two data objects
                 if partName == 'chair_arm' and i == 3:
-                    parts_list[partName] = Part(obj["objs"], obj_Files)
+                    parts_list[partName] = Part(obj["objs"], obj_Files, part_id)
 
     # Get the bounding_box data
     with open('mixer_files/bounding_box_data.json') as f:
         data = json.load(f)
+
+        # Set the bounding boxes for the reference and new parts
+        for new_part in parts_list.keys():
+            cur_part_id = parts_list[new_part].get_part_id()
+            parts_list[new_part].set_bounding_box(geometric_helpers.agg_boxes(data[cur_part_id][new_part]))
+
+        for ref_part in ref_parts_list.keys():
+            cur_part_id = ref_parts_list[ref_part].get_part_id()
+            ref_parts_list[ref_part].set_bounding_box(geometric_helpers.agg_boxes(data[cur_part_id][ref_part]))
 
     print('------Number of newly grabbed chair_back parts----')
     print(len(data[chosenParts[1]]["chair_back"]))
@@ -172,17 +189,32 @@ if __name__ == "__main__":
     print('----Number of reference chair_back parts----')
     print(len(data[chosenParts[0]]["chair_back"]))
 
-    # Option 1: Extend the bounding box for both the reference and new
-    chosen_back = geometric_helpers.agg_boxes(data[chosenParts[1]]["chair_back"])
-    ref_back = geometric_helpers.agg_boxes(data[chosenParts[0]]["chair_back"])
+    # Option 1: Extend the bounding box for both the reference and newagg_boxes(data[chosenParts[0]]["chair_back"])
     # NOT DONE: Option 2: Randomly choose symmetric parts from a list to replace
+
+    # geometric_helpers.plot_bounding_box(geometric_helpers.agg_boxes(data[chosenParts[0]]["chair_back"]), geometric_helpers.agg_boxes(data[chosenParts[0]]["chair_seat"]), geometric_helpers.agg_boxes(data[chosenParts[1]]["chair_back"]))
 
     # General TODO: parts are further divided into subparts, may further decide how to handle (ex. seed 346)
     # Transform chair back
+    chosen_back = parts_list["chair_back"].get_bounding_box()
+    ref_back = ref_parts_list["chair_back"].get_bounding_box()
     new_vertices = update_part_vertices(parts_list["chair_back"],
                                         chosen_back,
                                         ref_back)
     parts_list["chair_back"].vertices = new_vertices
+
+    # Check the bounding box of the new back's seat
+    seat_part = data[parts_list["chair_back"].get_part_id()]["chair_seat"]
+    seat_bounding_box = geometric_helpers.agg_boxes(seat_part)
+
+    # 4 closest point are index 0, 2, 4, 6 (A, C, E, G)
+    # Check the y difference between new chair_back and its seat
+    new_part_diff = chosen_back[1][1] - seat_bounding_box[0][1]
+    ref_part_diff = ref_back[1][1] - ref_parts_list["chair_seat"].get_bounding_box()[0][1]
+    diff = new_part_diff - ref_part_diff
+
+    # Shift the new back by the difference to make sure the bottom of the back is aligned with the seat
+    parts_list["chair_back"].vertices = geometric_helpers.shift_vertices(parts_list["chair_back"], "chair_back", diff)
 
     print('------Number of newly grabbed chair_base parts----')
     print(len(data[chosenParts[2]]["chair_base"]))

@@ -101,3 +101,11 @@ def agg_boxes(box_arr):
 
     return new_bounding_box
 
+
+def shift_vertices(part, part_name, magnitude):
+    new_vert = []
+    if part_name == 'chair_back':
+        for vert in part.get_vertices():
+            new_vert.append((vert[0], vert[1] + magnitude, vert[2]))
+
+    return new_vert
