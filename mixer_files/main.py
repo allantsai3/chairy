@@ -100,13 +100,6 @@ if __name__ == "__main__":
 
     sub_folders = [name for name in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, name))]
 
-    # -------- TESTING ------------
-    # random.seed(23)
-    # random.seed(80)
-    # random.seed(346)  # change data[chosenParts[1]]["chair_back"][0] on line 131 to
-    #                       data[chosenParts[1]]["chair_back"][3]
-    #
-    # -------- TESTING ------------
     index = random.choices(range(len(sub_folders)), k=4)
     chosenParts = [sub_folders[part] for part in index]
 
@@ -190,11 +183,7 @@ if __name__ == "__main__":
     print(len(data[chosenParts[0]]["chair_back"]))
 
     # Option 1: Extend the bounding box for both the reference and newagg_boxes(data[chosenParts[0]]["chair_back"])
-    # NOT DONE: Option 2: Randomly choose symmetric parts from a list to replace
 
-    # geometric_helpers.plot_bounding_box(geometric_helpers.agg_boxes(data[chosenParts[0]]["chair_back"]), geometric_helpers.agg_boxes(data[chosenParts[0]]["chair_seat"]), geometric_helpers.agg_boxes(data[chosenParts[1]]["chair_back"]))
-
-    # General TODO: parts are further divided into subparts, may further decide how to handle (ex. seed 346)
     # Transform chair back
     chosen_back = parts_list["chair_back"].get_bounding_box()
     ref_back = ref_parts_list["chair_back"].get_bounding_box()
@@ -207,10 +196,9 @@ if __name__ == "__main__":
     seat_part = data[parts_list["chair_back"].get_part_id()]["chair_seat"]
     seat_bounding_box = geometric_helpers.agg_boxes(seat_part)
 
-    # 4 closest point are index 0, 2, 4, 6 (A, C, E, G)
-    # Check the y difference between new chair_back and its seat
-    new_part_diff = chosen_back[1][1] - seat_bounding_box[0][1]
-    ref_part_diff = ref_back[1][1] - ref_parts_list["chair_seat"].get_bounding_box()[0][1]
+    # Check the y difference between new chair_back and its seat starting from the lowest point
+    new_part_diff = chosen_back[1][1] - seat_bounding_box[1][1]
+    ref_part_diff = ref_back[1][1] - ref_parts_list["chair_seat"].get_bounding_box()[1][1]
     diff = new_part_diff - ref_part_diff
 
     # Shift the new back by the difference to make sure the bottom of the back is aligned with the seat
