@@ -4,9 +4,7 @@ import json
 import cv2
 import argparse
 from Part import Part
-import matplotlib.pyplot as plt
 import numpy as np
-from mpl_toolkits.mplot3d import Axes3D
 import geometric_helpers
 
 """
@@ -19,23 +17,6 @@ Axioms for chair:
     Input: set of 3D parts and labels
     Output: Generated 3D model obj file
 """
-
-
-def plot_bounding_box(bounding_box1, bounding_box2):
-    i1 = np.array(bounding_box1)
-    x1, y1, z1 = i1.T
-
-    i2 = np.array(bounding_box2)
-    x2, y2, z2 = i2.T
-
-    fig = plt.figure()
-    ax = Axes3D(fig)
-    ax.set_xlabel('x axis')
-    ax.set_ylabel('y axis')
-    ax.set_zlabel('z axis')
-    ax.plot(x1, y1, z1, color='blue')
-    ax.plot(x2, y2, z2, color='C1')
-    plt.show()
 
 
 def update_part_vertices(part, part_bounding_box, ref_part_bounding_box):
@@ -71,6 +52,7 @@ def reconstruct_obj(part_list):
 
         vertex_count += len(vertices)
 
+
 def calculate_error(box1, box2):
     shift = (box1[0][0] - box2[0][0], box1[0][1] - box2[0][1], box1[0][2] - box2[0][2]) # Add this value to each box2 point
     error = 0
@@ -81,6 +63,7 @@ def calculate_error(box1, box2):
             min_distance = min(min_distance, d)
         error = error + min_distance
     return error
+
 
 def find_replacement(original_part, replacement_base_data):
     # Grab ones with the same labels
@@ -97,10 +80,12 @@ def find_replacement(original_part, replacement_base_data):
             current_pair = (c, point_distance_error)
         
     return current_pair[0]
-    
+
+
 def point_in_box(point, box):
     return (point[0] >= box[0][0] and point[0] >= box[1][0] and point[0] >= box[2][0] and point[0] >= box[3][0] and point[0] <= box[4][0] and point[0] <= box[5][0] and point[0] <= box[6][0] and point[0] <= box[7][0]) and (point[1] >= box[0][1] and point[1] >= box[1][1] and point[1] <= box[2][1] and point[1] <= box[3][1] and point[1] >= box[4][1] and point[1] >= box[5][1] and point[1] <= box[6][1] and point[1] <= box[7][1])  and (point[2] >= box[0][2] and point[2] <= box[1][2] and point[2] >= box[2][2] and point[2] <= box[3][2] and point[2] >= box[4][2] and point[2] <= box[5][2] and point[2] >= box[6][2] and point[2] <= box[7][2])
-    
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Chairs directory')
     parser.add_argument("--dir", required=True)
@@ -115,20 +100,21 @@ if __name__ == "__main__":
 
     sub_folders = [name for name in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, name))]
 
-    # random.seed(23)
-    # random.seed(80)
-    # random.seed(346)  # change data[chosenParts[1]]["chair_back"][0] on line 131 to
-    #                       data[chosenParts[1]]["chair_back"][3]
     index = random.choices(range(len(sub_folders)), k=4)
+    chosenParts = [sub_folders[part] for part in index]
 
-    #chosenParts = [sub_folders[part] for part in index]
-    chosenParts = ['172', '176', '173', '178']
-    #chosenParts = ['35824', '43115', '41157', '42831']
+    # -------- TESTING ------------
+    # chosenParts = ['172', sub_folders[index[1]], '173', '178']
+    # issue with part '41542'
+    # chosenParts = ['172', '41542', '173', '178']
+    # chosenParts = ['35824', '43115', '41157', '42831']
+    # -------- TESTING ------------
 
     print("Chosen parts are from folder:")
     print(chosenParts)
 
     parts_list = {}
+    ref_parts_list = {}
 
     """
     {
@@ -141,24 +127,26 @@ if __name__ == "__main__":
     chair_bases = {}
 
     # Choose the chair_seat, chair_back, chair_base, chair_arm
-    for i, part in enumerate(chosenParts):
-        with open(os.path.join(data_dir, part, "result_after_merging.json")) as json_file:
+    for i, part_id in enumerate(chosenParts):
+        with open(os.path.join(data_dir, part_id, "result_after_merging.json")) as json_file:
             try:
                 mergedData = json.load(json_file)
             except ValueError:
-                print(part)
+                print(part_id)
             except IOError:
                 print('IOError')
 
-            obj_Files = os.path.join(data_dir, part, "objs")
+            obj_Files = os.path.join(data_dir, part_id, "objs")
 
             for obj in mergedData[0]['children']:
                 partName = obj['name']
-                if partName == 'chair_seat' and i == 0:
-                    parts_list[partName] = Part(obj["objs"], obj_Files)
+                if i == 0:
+                    ref_parts_list[partName] = Part(obj["objs"], obj_Files, part_id)
+                    if partName == 'chair_seat':
+                        parts_list[partName] = Part(obj["objs"], obj_Files, part_id)
 
                 if partName == 'chair_back' and i == 1:
-                    parts_list[partName] = Part(obj["objs"], obj_Files)
+                    parts_list[partName] = Part(obj["objs"], obj_Files, part_id)
 
                 if partName == 'chair_base':
                     if i == 0:
@@ -173,29 +161,53 @@ if __name__ == "__main__":
 
                 # TODO: Need to split arms into two data objects
                 if partName == 'chair_arm' and i == 3:
-                    parts_list[partName] = Part(obj["objs"], obj_Files)
+                    parts_list[partName] = Part(obj["objs"], obj_Files, part_id)
 
     # Get the bounding_box data
-    with open('bounding_box_data.json') as f:
+    with open('mixer_files/bounding_box_data.json') as f:
         data = json.load(f)
+
+        # Set the bounding boxes for the reference and new parts
+        for new_part in parts_list.keys():
+            cur_part_id = parts_list[new_part].get_part_id()
+            parts_list[new_part].set_bounding_box(geometric_helpers.agg_boxes(data[cur_part_id][new_part]))
+
+        for ref_part in ref_parts_list.keys():
+            cur_part_id = ref_parts_list[ref_part].get_part_id()
+            ref_parts_list[ref_part].set_bounding_box(geometric_helpers.agg_boxes(data[cur_part_id][ref_part]))
 
     print('------Number of newly grabbed chair_back parts----')
     print(len(data[chosenParts[1]]["chair_back"]))
 
-    # General TODO: parts are further divided into subparts, may further decide how to handle (ex. seed 346)
+    print('----Number of reference chair_back parts----')
+    print(len(data[chosenParts[0]]["chair_back"]))
+
+    # Option 1: Extend the bounding box for both the reference and newagg_boxes(data[chosenParts[0]]["chair_back"])
+
     # Transform chair back
+    chosen_back = parts_list["chair_back"].get_bounding_box()
+    ref_back = ref_parts_list["chair_back"].get_bounding_box()
     new_vertices = update_part_vertices(parts_list["chair_back"],
-                                        data[chosenParts[1]]["chair_back"][0],
-                                        data[chosenParts[0]]["chair_back"][0])
+                                        chosen_back,
+                                        ref_back)
     parts_list["chair_back"].vertices = new_vertices
 
+    # Check the bounding box of the new back's seat
+    seat_part = data[parts_list["chair_back"].get_part_id()]["chair_seat"]
+    seat_bounding_box = geometric_helpers.agg_boxes(seat_part)
 
-    ###
+    # Check the y difference between new chair_back and its seat starting from the lowest point
+    new_part_diff = chosen_back[1][1] - seat_bounding_box[1][1]
+    ref_part_diff = ref_back[1][1] - ref_parts_list["chair_seat"].get_bounding_box()[1][1]
+    diff = new_part_diff - ref_part_diff
+
+    # Shift the new back by the difference to make sure the bottom of the back is aligned with the seat
+    parts_list["chair_back"].vertices = geometric_helpers.shift_vertices(parts_list["chair_back"], "chair_back", diff)
+
     print('------Number of newly grabbed chair_base parts----')
     print(len(data[chosenParts[2]]["chair_base"]))
-	
 
-    original_base_data = []     # Using these lists to collect data on the chair parts from the original and replacement models
+    original_base_data = []  # Using these lists to collect data on the chair parts from the original and replacement models
     replacement_base_data = []
     for i, og_part in enumerate(chair_bases['original_base'][0]['children']):   # Enumerating through the children of the original chairs base (So the components of the chair base)
         part_data = {}
@@ -231,7 +243,7 @@ if __name__ == "__main__":
     parts_list["chair_base"].vertices = new_vertices
     """
     ###
-	
+
     print('------Number of newly grabbed chair_arm parts----')
     print(len(data[chosenParts[3]]["chair_base"]))
     # TODO: May need additional handling due to some chairs not having arms (how to handle, we currently ignore)

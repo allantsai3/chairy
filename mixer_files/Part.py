@@ -5,9 +5,11 @@ This file contains the definition for a part
 
 
 class Part(object):
-    def __init__(self, file_list, obj_file_loc, log=False):
+    def __init__(self, file_list, obj_file_loc, part_id = -1, log=False):
         self.vertices = []
         self.faces = []
+        self.bounding_box = []
+        self.part_id = part_id
 
         self.load_part(file_list, obj_file_loc)
         # Get center of mass after loading all parts
@@ -21,6 +23,15 @@ class Part(object):
 
     def get_center_of_mass(self, vertices, faces):
         pass
+
+    def get_bounding_box(self):
+        return self.bounding_box
+
+    def get_part_id(self):
+        return self.part_id
+
+    def set_bounding_box(self, new_bounding_box):
+        self.bounding_box = new_bounding_box
 
     def load_part(self, file_list, obj_file_loc):
         # If each main part is composed of multiple parts
