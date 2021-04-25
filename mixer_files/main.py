@@ -185,28 +185,30 @@ if __name__ == "__main__":
         print(len(data[chosenParts[1]]["chair_back"]))
 
         # Transform chair back
-        chosen_back = parts_list["chair_back"].get_bounding_box()
-        ref_back = ref_parts_list["chair_back"].get_bounding_box()
-        transform_part(parts_list["chair_back"], chosen_back, ref_back)
+        if len(data[chosenParts[1]]["chair_back"]):
+            chosen_back = parts_list["chair_back"].get_bounding_box()
+            ref_back = ref_parts_list["chair_back"].get_bounding_box()
+            transform_part(parts_list["chair_back"], chosen_back, ref_back)
 
-        # # Get the seat of the new back to determine transformation
-        # seat_part = data[parts_list["chair_back"].get_part_id()]["chair_seat"]
-        # seat_bounding_box = geometric_helpers.agg_boxes(seat_part)
-        #
-        # # Check the y difference between new chair_back and its seat starting from the lowest point
-        # new_part_diff = chosen_back[1][1] - seat_bounding_box[0][1]
-        # ref_part_diff = ref_parts_list["chair_seat"].get_bounding_box()[0][1] - ref_back[1][1]
-        # diff = new_part_diff - ref_part_diff
-        #
-        # print(diff)
+            # # Get the seat of the new back to determine transformation
+            # seat_part = data[parts_list["chair_back"].get_part_id()]["chair_seat"]
+            # seat_bounding_box = geometric_helpers.agg_boxes(seat_part)
+            #
+            # # Check the y difference between new chair_back and its seat starting from the lowest point
+            # new_part_diff = chosen_back[1][1] - seat_bounding_box[0][1]
+            # ref_part_diff = ref_parts_list["chair_seat"].get_bounding_box()[0][1] - ref_back[1][1]
+            # diff = new_part_diff - ref_part_diff
+            #
+            # print(diff)
 
-        # Shift the new back by the difference to make sure the bottom of the back is aligned with the seat
-        # parts_list["chair_back"].vertices = geometric_helpers.shift_vertices(parts_list["chair_back"], "chair_back", diff)
+            # Shift the new back by the difference to make sure the bottom of the back is aligned with the seat
+            # parts_list["chair_back"].vertices = geometric_helpers.shift_vertices(parts_list["chair_back"], "chair_back", diff)
 
         #########################################################################################################
         print('------Number of newly grabbed chair_base parts----')
         print(len(data[chosenParts[2]]["chair_base"]))
 
+        # If the reference chair has no base (chair 35372)
         if len(data[chosenParts[2]]["chair_base"]):
             chosen_base = parts_list["chair_base"].get_bounding_box()       # Get the chair base's bounding box
             ref_seat = ref_parts_list["chair_seat"].get_bounding_box()      # Get the reference chair's seat bounding box
