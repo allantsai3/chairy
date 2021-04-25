@@ -102,7 +102,7 @@ if __name__ == "__main__":
         # chosenParts = ['44919', '43068', '36920', '42945']
         # chosenParts = ['38104', '39815', '39986', '43754']
         # chosenParts = ['40996', '3124', '43388', '44352']
-        chosenParts = ['39040', '41753', '42363', '43605']
+        # chosenParts = ['39040', '41753', '42363', '43605']
         # -------- TESTING ------------
 
         print("Chosen parts are from folder:")
