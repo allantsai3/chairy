@@ -91,7 +91,7 @@ if __name__ == "__main__":
     sub_folders = [name for name in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, name))]
 
     for current_chair_index in range(chairs_to_create):
-        #sub_folders = ['37107', '39781', '40141', '39426', '35698', '2320', '40546', '37790', '43006', '37108']
+        # sub_folders = ['37107', '39781', '40141', '39426', '35698', '2320', '40546', '37790', '43006', '37108']
         index = random.choices(range(len(sub_folders)), k=4)
         chosenParts = [sub_folders[part] for part in index]
 
@@ -202,7 +202,9 @@ if __name__ == "__main__":
             # print(diff)
 
             # Shift the new back by the difference to make sure the bottom of the back is aligned with the seat
-            # parts_list["chair_back"].vertices = geometric_helpers.shift_vertices(parts_list["chair_back"], "chair_back", diff)
+            # parts_list["chair_back"].vertices = geometric_helpers.shift_vertices(parts_list["chair_back"],
+            #                                                                      "chair_back",
+            #                                                                      diff)
 
         #########################################################################################################
         print('------Number of newly grabbed chair_base parts----')
@@ -241,7 +243,7 @@ if __name__ == "__main__":
 
         # Transform chair arm
         if len(data[chosenParts[0]]["chair_arm"]) and len(data[chosenParts[3]]["chair_arm"]):
-            #Transform first arm
+            # Transform first arm
             chosen_arm1 = parts_list["chair_arm1"].get_bounding_box()
             ref_arm1 = ref_parts_list["chair_arm1"].get_bounding_box()
             transform_part(parts_list["chair_arm1"], chosen_arm1, ref_arm1)
@@ -251,7 +253,7 @@ if __name__ == "__main__":
             ref_arm2 = ref_parts_list["chair_arm2"].get_bounding_box()
             transform_part(parts_list["chair_arm2"], chosen_arm2, ref_arm2)
         else:
-            # if both do not have arms, we have to make sure arms do not exist in the parts list
+            # if the reference chair do not have arms, we have to make sure arms do not exist in the parts list
             parts_list.pop('chair_arm1', None)
             parts_list.pop('chair_arm2', None)
 
