@@ -1,7 +1,7 @@
-from .model import get_model, train_model
+from model import get_model, train_model
 from pathlib import Path
 from pprint import pprint
-from . import binvox_rw
+import binvox_rw
 import argparse
 import numpy as np
 import tensorflow as tf
@@ -24,7 +24,7 @@ def batch_read_binvox(paths: list) -> tuple:
 
     first, first_label = read_binvox(paths[0])
     if len(paths) == 1:
-        return first, first_label
+        return np.array([first]), np.array([first_label])
 
     shape = (len(paths),) + tuple(first.shape)
     volumes = np.empty(shape, dtype=np.bool)
@@ -66,17 +66,19 @@ if __name__ == '__main__':
                             as_supervised=True)[0]
     else:
         paths = list(Path(args.dir).glob('**/*.binvox'))
-        rnd = np.random.default_rng(12345)
-        rnd.shuffle(paths)
+        if args.train:
+            rnd = np.random.default_rng(12345)
+            rnd.shuffle(paths)
         volumes, labels = batch_read_binvox(paths[:3000])
         volumes = np.expand_dims(volumes, axis=4)
         dataset = tf.data.Dataset.from_tensor_slices((volumes, labels))
 
-    model = get_model()
     if args.train:
+        model = get_model()
         model.summary()
         train_model(model, dataset)
     else:
-        model.load_weights(args.load)
-        result = model.predict(dataset)
-        pprint(result)
+        model = tf.keras.models.load_model(args.load)
+        result = model.predict(volumes)
+        for i, file in enumerate(paths):
+            print("{}: {}\n".format(file, result[i][0]))
