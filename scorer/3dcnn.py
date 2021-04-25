@@ -81,4 +81,4 @@ if __name__ == '__main__':
         model = tf.keras.models.load_model(args.load)
         result = model.predict(volumes)
         for i, file in enumerate(paths):
-            print("{}: {}\n".format(file, result[i][0]))
+            print("{}: {:.3f}%".format(file, result[i][0] * 100))

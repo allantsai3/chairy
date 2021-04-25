@@ -192,8 +192,6 @@ if __name__ == '__main__':
             points.append(trimesh.load(file).sample(NUM_POINTS))
 
         points = np.array(points)
-        points_count = len(points)
-        result = model.predict(
-            points, batch_size=points_count if points_count < BATCH_SIZE else BATCH_SIZE)
+        result = model.predict(points)
         for i, file in enumerate(files):
-            print("{}: {}\n".format(file, result[i][0]))
+            print("{}: {:.3f}%".format(file, result[i][0] * 100))
