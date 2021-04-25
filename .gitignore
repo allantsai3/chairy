@@ -128,6 +128,13 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Tensorflow stuffs
 *.h5
 logs
-.vscode
+
+# VSCode settings
+.vscode 
+
+# Mixer output file
+/tmp_mixer_output
+
