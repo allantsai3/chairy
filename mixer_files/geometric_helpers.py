@@ -67,8 +67,6 @@ def bounding_box_transform(set1, set2):
 
 
 def agg_boxes(box_arr):
-    # print(box_arr[0])
-    # plot_bounding_box(box_arr[0], box_arr[1])
     # Instantiate the bounding box with the first point in the bounding box array
     pos_x = box_arr[0][0][0]
     neg_x = box_arr[0][0][0]
@@ -96,8 +94,6 @@ def agg_boxes(box_arr):
 
     new_bounding_box = [[pos_x, pos_y, pos_z], [pos_x, neg_y, pos_z], [neg_x, pos_y, pos_z], [neg_x, neg_y, pos_z],
                         [pos_x, pos_y, neg_z], [pos_x, neg_y, neg_z], [neg_x, pos_y, neg_z], [neg_x, neg_y, neg_z]]
-
-    # plot_bounding_box(box_arr[0], box_arr[1], new_bounding_box)
 
     return new_bounding_box
 
