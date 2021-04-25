@@ -53,39 +53,6 @@ def reconstruct_obj(part_list):
         vertex_count += len(vertices)
 
 
-def calculate_error(box1, box2):
-    shift = (box1[0][0] - box2[0][0], box1[0][1] - box2[0][1], box1[0][2] - box2[0][2]) # Add this value to each box2 point
-    error = 0
-    for p1 in box1:
-        min_distance = float('inf')
-        for p2 in box2:
-            d = (p1[0] - (p2[0] + shift[0]))**2 + (p1[1] - (p2[1] + shift[1]))**2 + (p1[2] - (p2[2] + shift[2]))**2
-            min_distance = min(min_distance, d)
-        error = error + min_distance
-    return error
-
-
-def find_replacement(original_part, replacement_base_data):
-    # Grab ones with the same labels
-    candidates = [part for part in replacement_base_data if part['name'] == original_part['name']]
-
-    if len(candidates) == 0:    # If we don't get any hits then we're gonna take the best we can
-        candidates = replacement_base_data
-    
-    current_pair = (None, float('inf'))
-    for c in candidates:
-        point_distance_error = calculate_error(original_part['bounding_box'], c['bounding_box'])
-        
-        if point_distance_error < current_pair[1]:
-            current_pair = (c, point_distance_error)
-        
-    return current_pair[0]
-
-
-def point_in_box(point, box):
-    return (point[0] >= box[0][0] and point[0] >= box[1][0] and point[0] >= box[2][0] and point[0] >= box[3][0] and point[0] <= box[4][0] and point[0] <= box[5][0] and point[0] <= box[6][0] and point[0] <= box[7][0]) and (point[1] >= box[0][1] and point[1] >= box[1][1] and point[1] <= box[2][1] and point[1] <= box[3][1] and point[1] >= box[4][1] and point[1] >= box[5][1] and point[1] <= box[6][1] and point[1] <= box[7][1])  and (point[2] >= box[0][2] and point[2] <= box[1][2] and point[2] >= box[2][2] and point[2] <= box[3][2] and point[2] >= box[4][2] and point[2] <= box[5][2] and point[2] >= box[6][2] and point[2] <= box[7][2])
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Chairs directory')
     parser.add_argument("--dir", required=True)
@@ -97,9 +64,9 @@ if __name__ == "__main__":
         exit(-1)
 
     data_dir = args.dir
-
     sub_folders = [name for name in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, name))]
 
+    #sub_folders = ['37107', '39781', '40141', '39426', '35698', '2320', '40546', '37790', '43006', '37108']
     index = random.choices(range(len(sub_folders)), k=4)
     chosenParts = [sub_folders[part] for part in index]
 
@@ -115,16 +82,6 @@ if __name__ == "__main__":
 
     parts_list = {}
     ref_parts_list = {}
-
-    """
-    {
-        original_base: json_data
-        original_base_path: path
-        replacement_base: json_data
-        replacement_base_path: path
-    }
-    """
-    chair_bases = {}
 
     # Choose the chair_seat, chair_back, chair_base, chair_arm
     for i, part_id in enumerate(chosenParts):
@@ -147,18 +104,10 @@ if __name__ == "__main__":
 
                 if partName == 'chair_back' and i == 1:
                     parts_list[partName] = Part(obj["objs"], obj_Files, part_id)
-
-                if partName == 'chair_base':
-                    if i == 0:
-                        # Here I am going to keep a reference to the original chairs parts
-                        chair_bases['original_base'] = obj['children']
-                        chair_bases['original_base_path'] = obj_Files
-                    elif i == 2:
-                        #parts_list[partName] = Part(obj["objs"], obj_Files)
-                        # Here I am saving the parts that will replace the original chair parts
-                        chair_bases['replacement_base'] = obj['children']
-                        chair_bases['replacement_base_path'] = obj_Files
-
+                
+                if partName == 'chair_base' and i == 2:
+                    parts_list[partName] = Part(obj['objs'], obj_Files, part_id)
+                
                 # TODO: Need to split arms into two data objects
                 if partName == 'chair_arm' and i == 3:
                     parts_list[partName] = Part(obj["objs"], obj_Files, part_id)
@@ -204,44 +153,36 @@ if __name__ == "__main__":
     # Shift the new back by the difference to make sure the bottom of the back is aligned with the seat
     parts_list["chair_back"].vertices = geometric_helpers.shift_vertices(parts_list["chair_back"], "chair_back", diff)
 
+    ###
     print('------Number of newly grabbed chair_base parts----')
     print(len(data[chosenParts[2]]["chair_base"]))
-
-    original_base_data = []  # Using these lists to collect data on the chair parts from the original and replacement models
-    replacement_base_data = []
-    for i, og_part in enumerate(chair_bases['original_base'][0]['children']):   # Enumerating through the children of the original chairs base (So the components of the chair base)
-        part_data = {}
-        part_data['name'] = og_part['name']
-        part_data['objs'] = og_part['objs']
-        part_data['bounding_box'] = data[chosenParts[0]]["chair_base"][i] # Doesn't work this way? The bounding boxes might not be in the same order?
-        part_data['path'] = chair_bases['original_base_path']
-
-        original_base_data.append(part_data)
+	
     
-    for j, rp_part in enumerate(chair_bases['replacement_base'][0]['children']):
-        part_data = {}
-        part_data['name'] = rp_part['name']
-        part_data['objs'] = rp_part['objs']
-        part_data['bounding_box'] = data[chosenParts[2]]["chair_base"][j]
-        part_data['path'] = chair_bases['replacement_base_path']
-        
-        replacement_base_data.append(part_data)
- 
-    # For each component of the original chair base, find something to replace it with
-    for i, original_part in enumerate(original_base_data):
-        replacement_part = find_replacement(original_part, replacement_base_data) # Picks the part with the smallest error metric
-        new_name = original_part['name'] + " " + str(i) # Just coming up with a generic name here
-        parts_list[new_name] = Part(replacement_part["objs"], replacement_part['path']) # Create a new part object
-        new_verts = update_part_vertices(parts_list[new_name], replacement_part['bounding_box'], original_part['bounding_box']) # Apply the transformation
-        parts_list[new_name].vertices = new_verts
-
-    """
-    # Transform chair base
+    ###    
+    chosen_base = parts_list["chair_base"].get_bounding_box()       # Get the chair base's bounding box
+    ref_seat = ref_parts_list["chair_seat"].get_bounding_box()      # Get the reference chair's seat bounding box
+    ref_base = ref_parts_list["chair_base"].get_bounding_box()      # Get the reference chair's base bounding box
+    
+    
+    seat_width_buffer = abs(ref_seat[0][0] - ref_seat[2][0]) / 10
+    
+    # Calculate new parts bounding box as a combination of the reference pieces and new piece
+    maxx = ref_seat[0][0] - seat_width_buffer
+    minx = ref_seat[2][0] + seat_width_buffer
+    
+    maxy = (ref_seat[0][1] + ref_seat[1][1]) / 2
+    miny = maxy - (0.66*(chosen_base[0][1] - chosen_base[1][1]) + 0.33*(ref_base[0][1] - ref_base[1][1]))
+    
+    maxz = ref_seat[0][2]
+    minz = ref_seat[4][2]
+    
+    new_box = [[maxx, maxy, maxz], [maxx, miny, maxz], [minx, maxy, maxz], [minx, miny, maxz],
+               [maxx, maxy, minz], [maxx, miny, minz], [minx, maxy, minz], [minx, miny, minz]]
+    
     new_vertices = update_part_vertices(parts_list["chair_base"],
-                                        data[chosenParts[2]]["chair_base"][0],
-                                        data[chosenParts[0]]["chair_base"][0])
+                                        chosen_base,
+                                        new_box)
     parts_list["chair_base"].vertices = new_vertices
-    """
     ###
 
     print('------Number of newly grabbed chair_arm parts----')
