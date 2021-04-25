@@ -1,6 +1,0 @@
-mesh-group-splitter.py:
-
-Running this should split one of the grass chair obj files into its segments 
-and write them into individual obj files in the ./splitFiles directory
-
-Currently very slow and needs optimization
