@@ -42,6 +42,15 @@ def update_part_vertices(part, part_bounding_box, ref_part_bounding_box):
     return [tuple(x) for x in new_v[0]]
 
 
+def transform_part(part_obj, from_bounding_box, to_bounding_box):
+    # There are issues with the affine transform of the bounding box are exactly the same (no transform required)
+    if from_bounding_box != to_bounding_box:
+        new_vertices = update_part_vertices(part_obj,
+                                            from_bounding_box,
+                                            to_bounding_box)
+        part_obj.vertices = new_vertices
+
+
 def reconstruct_obj(part_list, index):
     # Create the output directory if it doesn't exist
     directory = "tmp_mixer_output"
@@ -84,14 +93,14 @@ if __name__ == "__main__":
     for current_chair_index in range(chairs_to_create):
         #sub_folders = ['37107', '39781', '40141', '39426', '35698', '2320', '40546', '37790', '43006', '37108']
         index = random.choices(range(len(sub_folders)), k=4)
-        # chosenParts = [sub_folders[part] for part in index]
+        chosenParts = [sub_folders[part] for part in index]
 
         # -------- TESTING ------------
         # chosenParts = ['172', sub_folders[index[1]], '173', '178']
         # issue with part '41542'
         # chosenParts = ['172', '41542', '173', '178']
         # chosenParts = ['44919', '43068', '36920', '42945']
-        chosenParts = ['2741', '39648', '40721', '38412']
+        # chosenParts = ['38104', '39815', '39986', '43754']
         # -------- TESTING ------------
 
         print("Chosen parts are from folder:")
@@ -146,30 +155,37 @@ if __name__ == "__main__":
             if len(data[chosenParts[3]]['chair_arm']):
                 left, right = split_chair_arm(data[chosenParts[3]]['chair_arm'])
                 if len(left) > 1:
-                    parts_list['chair_arm1'].set_bounding_box(geometric_helpers.agg_boxes(left))
+                    left = geometric_helpers.agg_boxes(left)
+
+                parts_list['chair_arm1'].set_bounding_box(left)
+
                 if len(right) > 1:
-                    parts_list['chair_arm2'].set_bounding_box(geometric_helpers.agg_boxes(right))
+                    right = geometric_helpers.agg_boxes(right)
+
+                parts_list['chair_arm2'].set_bounding_box(right)
 
             if len(data[chosenParts[0]]['chair_arm']):
                 left, right = split_chair_arm(data[chosenParts[3]]['chair_arm'])
                 if len(left) > 1:
-                    ref_parts_list['chair_arm1'].set_bounding_box(geometric_helpers.agg_boxes(left))
+                    left = geometric_helpers.agg_boxes(left)
+
+                ref_parts_list['chair_arm1'].set_bounding_box(left)
 
                 if len(right) > 1:
-                    ref_parts_list['chair_arm2'].set_bounding_box(geometric_helpers.agg_boxes(right))
+                    right = geometric_helpers.agg_boxes(right)
+
+                ref_parts_list['chair_arm2'].set_bounding_box(right)
 
         # Set the bounding boxes for the reference and new parts
         ignore_list = ['chair_arm1', 'chair_arm2']
         for new_part in parts_list.keys():
             cur_part_id = parts_list[new_part].get_part_id()
             if new_part not in ignore_list:  # since they are pre-parsed above
-                print(new_part)
                 parts_list[new_part].set_bounding_box(geometric_helpers.agg_boxes(data[cur_part_id][new_part]))
 
         for ref_part in ref_parts_list.keys():
             cur_part_id = ref_parts_list[ref_part].get_part_id()
             if ref_part not in ignore_list:  # since they are pre-parsed above
-                print(new_part)
                 ref_parts_list[ref_part].set_bounding_box(geometric_helpers.agg_boxes(data[cur_part_id][ref_part]))
 
         ###############################################################################################
@@ -181,10 +197,7 @@ if __name__ == "__main__":
         # Transform chair back
         chosen_back = parts_list["chair_back"].get_bounding_box()
         ref_back = ref_parts_list["chair_back"].get_bounding_box()
-        new_vertices = update_part_vertices(parts_list["chair_back"],
-                                            chosen_back,
-                                            ref_back)
-        parts_list["chair_back"].vertices = new_vertices
+        transform_part(parts_list["chair_back"], chosen_back, ref_back)
 
         # Check the bounding box of the new back's seat
         seat_part = data[parts_list["chair_back"].get_part_id()]["chair_seat"]
@@ -224,11 +237,8 @@ if __name__ == "__main__":
         
         new_box = [[maxx, maxy, maxz], [maxx, miny, maxz], [minx, maxy, maxz], [minx, miny, maxz],
                    [maxx, maxy, minz], [maxx, miny, minz], [minx, maxy, minz], [minx, miny, minz]]
-        
-        new_vertices = update_part_vertices(parts_list["chair_base"],
-                                            chosen_base,
-                                            new_box)
-        parts_list["chair_base"].vertices = new_vertices
+
+        transform_part(parts_list["chair_base"], chosen_base, new_box)
 
         ######################################################################################################
         print('------Number of newly grabbed chair_arm parts----')
@@ -239,19 +249,15 @@ if __name__ == "__main__":
         # Transform chair arm
         # If reference chair has arms
         if len(data[chosenParts[0]]["chair_arm"]) and len(data[chosenParts[3]]["chair_arm"]):
+            #Transform first arm
             chosen_arm1 = parts_list["chair_arm1"].get_bounding_box()
             ref_arm1 = ref_parts_list["chair_arm1"].get_bounding_box()
-            new_vertices = update_part_vertices(parts_list["chair_arm1"],
-                                                chosen_arm1,
-                                                ref_arm1)
-            parts_list["chair_arm1"].vertices = new_vertices
+            transform_part(parts_list["chair_arm1"], chosen_arm1, ref_arm1)
 
+            # transform second arm
             chosen_arm2 = parts_list["chair_arm2"].get_bounding_box()
             ref_arm2 = ref_parts_list["chair_arm2"].get_bounding_box()
-            new_vertices = update_part_vertices(parts_list["chair_arm2"],
-                                                chosen_arm2,
-                                                ref_arm2)
-            parts_list["chair_arm2"].vertices = new_vertices
+            transform_part(parts_list["chair_arm2"], chosen_arm2, ref_arm2)
 
         # Combine the various part vertices/faces and then output obj files
         reconstruct_obj(parts_list, current_chair_index)
