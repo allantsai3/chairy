@@ -91,19 +91,9 @@ if __name__ == "__main__":
     sub_folders = [name for name in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, name))]
 
     for current_chair_index in range(chairs_to_create):
-        #sub_folders = ['37107', '39781', '40141', '39426', '35698', '2320', '40546', '37790', '43006', '37108']
+        # sub_folders = ['37107', '39781', '40141', '39426', '35698', '2320', '40546', '37790', '43006', '37108']
         index = random.choices(range(len(sub_folders)), k=4)
         chosenParts = [sub_folders[part] for part in index]
-
-        # -------- TESTING ------------
-        # chosenParts = ['172', sub_folders[index[1]], '173', '178']
-        # issue with part '41542'
-        # chosenParts = ['172', '41542', '173', '178']
-        # chosenParts = ['44919', '43068', '36920', '42945']
-        # chosenParts = ['38104', '39815', '39986', '43754']
-        # chosenParts = ['40996', '3124', '43388', '44352']
-        # chosenParts = ['39040', '41753', '42363', '43605']
-        # -------- TESTING ------------
 
         print("Chosen parts are from folder:")
         print(chosenParts)
@@ -195,63 +185,65 @@ if __name__ == "__main__":
         print(len(data[chosenParts[1]]["chair_back"]))
 
         # Transform chair back
-        chosen_back = parts_list["chair_back"].get_bounding_box()
-        ref_back = ref_parts_list["chair_back"].get_bounding_box()
-        transform_part(parts_list["chair_back"], chosen_back, ref_back)
+        if len(data[chosenParts[1]]["chair_back"]):
+            chosen_back = parts_list["chair_back"].get_bounding_box()
+            ref_back = ref_parts_list["chair_back"].get_bounding_box()
+            transform_part(parts_list["chair_back"], chosen_back, ref_back)
 
-        # # Get the seat of the new back to determine transformation
-        # seat_part = data[parts_list["chair_back"].get_part_id()]["chair_seat"]
-        # seat_bounding_box = geometric_helpers.agg_boxes(seat_part)
-        #
-        # # Check the y difference between new chair_back and its seat starting from the lowest point
-        # new_part_diff = chosen_back[1][1] - seat_bounding_box[0][1]
-        # ref_part_diff = ref_parts_list["chair_seat"].get_bounding_box()[0][1] - ref_back[1][1]
-        # diff = new_part_diff - ref_part_diff
-        #
-        # print(diff)
+            # # Get the seat of the new back to determine transformation
+            # seat_part = data[parts_list["chair_back"].get_part_id()]["chair_seat"]
+            # seat_bounding_box = geometric_helpers.agg_boxes(seat_part)
+            #
+            # # Check the y difference between new chair_back and its seat starting from the lowest point
+            # new_part_diff = chosen_back[1][1] - seat_bounding_box[0][1]
+            # ref_part_diff = ref_parts_list["chair_seat"].get_bounding_box()[0][1] - ref_back[1][1]
+            # diff = new_part_diff - ref_part_diff
+            #
+            # print(diff)
 
-        # Shift the new back by the difference to make sure the bottom of the back is aligned with the seat
-        # parts_list["chair_back"].vertices = geometric_helpers.shift_vertices(parts_list["chair_back"], "chair_back", diff)
+            # Shift the new back by the difference to make sure the bottom of the back is aligned with the seat
+            # parts_list["chair_back"].vertices = geometric_helpers.shift_vertices(parts_list["chair_back"],
+            #                                                                      "chair_back",
+            #                                                                      diff)
 
         #########################################################################################################
         print('------Number of newly grabbed chair_base parts----')
         print(len(data[chosenParts[2]]["chair_base"]))
 
-        chosen_base = parts_list["chair_base"].get_bounding_box()       # Get the chair base's bounding box
-        ref_seat = ref_parts_list["chair_seat"].get_bounding_box()      # Get the reference chair's seat bounding box
-        
-        if 'chair_base' in ref_parts_list.keys():
-            ref_base = ref_parts_list["chair_base"].get_bounding_box()      # Get the reference chair's base bounding box
-        else:
-            ref_base = chosen_base
-        
-        seat_width_buffer = abs(ref_seat[0][0] - ref_seat[2][0]) / 10
-        
-        # Calculate new parts bounding box as a combination of the reference pieces and new piece
-        maxx = ref_seat[0][0] - seat_width_buffer
-        minx = ref_seat[2][0] + seat_width_buffer
-        
-        maxy = (ref_seat[0][1] + ref_seat[1][1]) / 2
-        miny = maxy - (0.66*(chosen_base[0][1] - chosen_base[1][1]) + 0.33*(ref_base[0][1] - ref_base[1][1]))
-        
-        maxz = ref_seat[0][2]
-        minz = ref_seat[4][2]
-        
-        new_box = [[maxx, maxy, maxz], [maxx, miny, maxz], [minx, maxy, maxz], [minx, miny, maxz],
-                   [maxx, maxy, minz], [maxx, miny, minz], [minx, maxy, minz], [minx, miny, minz]]
+        # If the reference chair has no base (chair 35372)
+        if len(data[chosenParts[2]]["chair_base"]):
+            chosen_base = parts_list["chair_base"].get_bounding_box()       # Get the chair base's bounding box
+            ref_seat = ref_parts_list["chair_seat"].get_bounding_box()      # Get the reference chair's seat bounding box
 
-        transform_part(parts_list["chair_base"], chosen_base, new_box)
+            if 'chair_base' in ref_parts_list.keys():
+                ref_base = ref_parts_list["chair_base"].get_bounding_box()      # Get the reference chair's base bounding box
+            else:
+                ref_base = chosen_base
+
+            seat_width_buffer = abs(ref_seat[0][0] - ref_seat[2][0]) / 10
+
+            # Calculate new parts bounding box as a combination of the reference pieces and new piece
+            maxx = ref_seat[0][0] - seat_width_buffer
+            minx = ref_seat[2][0] + seat_width_buffer
+
+            maxy = (ref_seat[0][1] + ref_seat[1][1]) / 2
+            miny = maxy - (0.66*(chosen_base[0][1] - chosen_base[1][1]) + 0.33*(ref_base[0][1] - ref_base[1][1]))
+
+            maxz = ref_seat[0][2]
+            minz = ref_seat[4][2]
+
+            new_box = [[maxx, maxy, maxz], [maxx, miny, maxz], [minx, maxy, maxz], [minx, miny, maxz],
+                       [maxx, maxy, minz], [maxx, miny, minz], [minx, maxy, minz], [minx, miny, minz]]
+
+            transform_part(parts_list["chair_base"], chosen_base, new_box)
 
         ######################################################################################################
         print('------Number of newly grabbed chair_arm parts----')
-        print(len(data[chosenParts[3]]["chair_base"]))
-        # TODO: May need additional handling due to some chairs not having arms (how to handle, we currently ignore)
-        #  // two arms are regarded as separate two objects
-        #
+        print(len(data[chosenParts[3]]["chair_arm"]))
+
         # Transform chair arm
-        # If reference chair has arms
         if len(data[chosenParts[0]]["chair_arm"]) and len(data[chosenParts[3]]["chair_arm"]):
-            #Transform first arm
+            # Transform first arm
             chosen_arm1 = parts_list["chair_arm1"].get_bounding_box()
             ref_arm1 = ref_parts_list["chair_arm1"].get_bounding_box()
             transform_part(parts_list["chair_arm1"], chosen_arm1, ref_arm1)
@@ -260,6 +252,10 @@ if __name__ == "__main__":
             chosen_arm2 = parts_list["chair_arm2"].get_bounding_box()
             ref_arm2 = ref_parts_list["chair_arm2"].get_bounding_box()
             transform_part(parts_list["chair_arm2"], chosen_arm2, ref_arm2)
+        else:
+            # if the reference chair do not have arms, we have to make sure arms do not exist in the parts list
+            parts_list.pop('chair_arm1', None)
+            parts_list.pop('chair_arm2', None)
 
         # Combine the various part vertices/faces and then output obj files
         reconstruct_obj(parts_list, current_chair_index)
