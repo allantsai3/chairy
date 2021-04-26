@@ -100,29 +100,29 @@ if __name__ == "__main__":
         chosenParts = [sub_folders[part] for part in index]
 
         
+        if True:
+            #IOU part choice
+            basePiece = random.choices(range(len(sub_folders)))[0]
+            #print(basePiece)
 
-        #IOU part choice
-        basePiece = random.choices(range(len(sub_folders)))[0]
-        #print(basePiece)
+            basePiece = current_chair_index
 
-        basePiece = current_chair_index
+            remainingParts = sub_folders[:basePiece]+sub_folders[basePiece+1:]
 
-        remainingParts = sub_folders[:basePiece]+sub_folders[basePiece+1:]
+            partIOU = calculateIOU([sub_folders[basePiece]]+remainingParts, directory="../../grass-master", translate=False)
 
-        partIOU = calculateIOU([sub_folders[basePiece]]+remainingParts, directory="../../grass-master", translate=False)
+            #print(partIOU)
+            #exit()
 
-        #print(partIOU)
-        #exit()
+            seatIndex = sub_folders[basePiece]
+            backIndex = remainingParts[np.argmax(partIOU[0])]
+            legIndex = remainingParts[np.argmax(partIOU[2])]
+            armIndex = remainingParts[np.argmax(partIOU[3])]
 
-        seatIndex = sub_folders[basePiece]
-        backIndex = remainingParts[np.argmax(partIOU[0])]
-        legIndex = remainingParts[np.argmax(partIOU[2])]
-        armIndex = remainingParts[np.argmax(partIOU[3])]
-
-        chosenParts[0] = backIndex
-        chosenParts[1] = seatIndex
-        chosenParts[2] = legIndex
-        chosenParts[3] = armIndex
+            chosenParts[0] = backIndex
+            chosenParts[1] = seatIndex
+            chosenParts[2] = legIndex
+            chosenParts[3] = armIndex
 
         print("Chosen parts are from folder:")
         print(chosenParts)
