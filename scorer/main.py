@@ -1,7 +1,7 @@
-from .model import get_model, train_model
+from model import get_model, train_model
 from pathlib import Path
 from pprint import pprint
-from . import binvox_rw
+import binvox_rw
 import argparse
 import numpy as np
 import tensorflow as tf

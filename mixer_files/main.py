@@ -7,6 +7,10 @@ from Part import Part
 import numpy as np
 import geometric_helpers
 
+import sys
+sys.path.insert(1, '../parser/')
+from part_projection_comparison import calculateIOU
+
 """
 Axioms for chair:
  - Something that can be sit on (has a base)
@@ -91,9 +95,34 @@ if __name__ == "__main__":
     sub_folders = [name for name in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, name))]
 
     for current_chair_index in range(chairs_to_create):
-        # sub_folders = ['37107', '39781', '40141', '39426', '35698', '2320', '40546', '37790', '43006', '37108']
+        sub_folders = ['37107', '39781', '40141', '39426', '35698', '2320', '40546', '37790', '43006', '37108']
         index = random.choices(range(len(sub_folders)), k=4)
         chosenParts = [sub_folders[part] for part in index]
+
+        
+
+        #IOU part choice
+        basePiece = random.choices(range(len(sub_folders)))[0]
+        #print(basePiece)
+
+        basePiece = current_chair_index
+
+        remainingParts = sub_folders[:basePiece]+sub_folders[basePiece+1:]
+
+        partIOU = calculateIOU([sub_folders[basePiece]]+remainingParts, directory="../../grass-master", translate=False)
+
+        #print(partIOU)
+        #exit()
+
+        seatIndex = sub_folders[basePiece]
+        backIndex = remainingParts[np.argmax(partIOU[0])]
+        legIndex = remainingParts[np.argmax(partIOU[2])]
+        armIndex = remainingParts[np.argmax(partIOU[3])]
+
+        chosenParts[0] = backIndex
+        chosenParts[1] = seatIndex
+        chosenParts[2] = legIndex
+        chosenParts[3] = armIndex
 
         print("Chosen parts are from folder:")
         print(chosenParts)

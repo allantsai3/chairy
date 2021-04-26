@@ -198,9 +198,9 @@ class Renderer:
         return
 
 
-    def getPart(self, directory, chairNumber, componentNumber):
+    def getPart(self, directory, chairNumber, componentNumber, translate=True):
 
-        if( chairNumber < 1 or chairNumber > 6201):
+        if( translate and (chairNumber < 1 or chairNumber > 6201)):
             print("Error, chair number does not exist")
             return
 
@@ -208,32 +208,62 @@ class Renderer:
             print("Error, component number does not exist")
             return
 
-        #expects the grass-master directory
-        pmiMat = scipy.io.loadmat(directory+"/Chair/part mesh indices/"+ str(chairNumber) +".mat")
-
+        
         #get the obj and obb files
+        if translate:
 
-        with open(directory+"/Chair/obbs/"+str(pmiMat['shapename'][0]+".obb"),"r") as obbFile:
+            #expects the grass-master directory
+            pmiMat = scipy.io.loadmat(directory+"/Chair/part mesh indices/"+ str(chairNumber) +".mat")
 
-            line = obbFile.readline()
 
-            #get the labels from the obb
-            while(line != '' and line[0] != 'L'):
+            with open(directory+"/Chair/obbs/"+str(pmiMat['shapename'][0]+".obb"),"r") as obbFile:
+
                 line = obbFile.readline()
 
-            line = obbFile.readline()
+                #get the labels from the obb
+                while(line != '' and line[0] != 'L'):
+                    line = obbFile.readline()
 
-            labels = []
-
-            while(line != ''):
-                labels.append(line.split()[0])
                 line = obbFile.readline()
 
-        #Parse the object file
-        with open(directory+"/Chair/models/"+str(pmiMat['shapename'][0]+".obj"),"r") as objFile:
-            lines = objFile.read().splitlines()
+                labels = []
 
-        print("Loading chair model: ",pmiMat['shapename'])
+                while(line != ''):
+                    labels.append(line.split()[0])
+                    line = obbFile.readline()
+
+                #Parse the object file
+                with open(directory+"/Chair/models/"+str(pmiMat['shapename'][0]+".obj"),"r") as objFile:
+                    lines = objFile.read().splitlines()
+                    #print("Loading chair model: ",pmiMat['shapename'])
+
+        else:
+            with open(directory+"/Chair/obbs/"+str(chairNumber)+".obb","r") as obbFile:
+
+                line = obbFile.readline()
+
+                #get the labels from the obb
+                while(line != '' and line[0] != 'L'):
+                    line = obbFile.readline()
+
+                line = obbFile.readline()
+
+                labels = []
+
+                while(line != ''):
+                    labels.append(line.split()[0])
+                    line = obbFile.readline()
+
+                #Parse the object file
+                with open(directory+"/Chair/models/"+str(chairNumber)+".obj","r") as objFile:
+                    lines = objFile.read().splitlines()
+                    #print("Loading chair model: ",chairNumber)
+
+                
+        
+
+
+        
         
         groups = []
         vertices = []
@@ -301,20 +331,20 @@ def intersectOverUnion(image1, image2):
     return intersectValue/unionValue
 
 
-def calculateIOU(chairs, directory="../grass-master"):
+def calculateIOU(chairs, directory="../grass-master", translate=True):
     renderer = Renderer()
 
     masterRenders = []
 
     for i in range(4):
-        renderer.getPart(directory, chairs[0], i)
+        renderer.getPart(directory, chairs[0], i, translate)
         masterRenders.append(threeAngleRender(renderer))
 
     partChairs = []
     for chair in range(1, len(chairs)):
         partChairs.append([])
         for i in range(4):
-            renderer.getPart(directory, chairs[chair], i)
+            renderer.getPart(directory, chairs[chair], i, translate)
             partChairs[chair-1].append(threeAngleRender(renderer))
     
     ious = []
@@ -326,5 +356,7 @@ def calculateIOU(chairs, directory="../grass-master"):
     return ious
 
 #master = calculateIOU([369,175,5540])
+
+#master = calculateIOU(['2585','2323','43872'], translate=False)
 
 #print("done")
