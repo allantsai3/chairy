@@ -2,6 +2,7 @@ import datetime
 import numpy as np
 import tensorflow as tf
 import trimesh
+import argparse
 from tensorflow import keras
 from tensorflow.keras import layers
 from pathlib import Path
@@ -27,7 +28,8 @@ class OrthogonalRegularizer(keras.regularizers.Regularizer):
 
     @classmethod
     def from_config(cls, config):
-        return OrthogonalRegularizer(num_features=config['num_features'], l2reg=config['l2reg'])
+        return OrthogonalRegularizer(
+            num_features=config['num_features'], l2reg=config['l2reg'])
 
 
 def conv_bn(x, filters):
@@ -87,9 +89,7 @@ def get_pointnet_model(num_points=2048):
     return model
 
 
-def parse_dataset(data_dir, num_points=2048, test_size=1000):
-
-    files = list(Path(data_dir).glob('**/*.obj'))
+def parse_dataset(files, num_points=2048, test_size=1000):
     rnd = np.random.default_rng(12345)
     rnd.shuffle(files)
     points = []
@@ -121,46 +121,77 @@ def augment(points, label):
 
 
 if __name__ == '__main__':
-    NUM_POINTS = 2048
+    parser = argparse.ArgumentParser(description='Run PointNet network')
+    parser.add_argument('--dir', type=str, default=None,
+                        help='Directory of chair voxel files')
+    parser.add_argument('--load', type=str, default='pointnet.h5',
+                        help='Path to load dataset from')
+    parser.add_argument('--train', action='store_true', default=False,
+                        help='Run model in train mode')
+    parser.add_argument('--points', type=int, default=2048,
+                        help='Number of points to sample')
+
+    args = parser.parse_args()
+    NUM_POINTS = args.points if args.points > 0 else 2048
     BATCH_SIZE = 32
 
-    model = get_pointnet_model(NUM_POINTS)
+    if args.train:
+        model = get_pointnet_model(NUM_POINTS)
 
-    model.compile(
-        loss="binary_crossentropy",
-        optimizer=keras.optimizers.Adam(learning_rate=0.0005),
-        metrics=["acc"],
-    )
+        model.compile(
+            loss="binary_crossentropy",
+            optimizer=keras.optimizers.Adam(learning_rate=0.0005),
+            metrics=["acc"],
+        )
 
-    # train_points, test_points, train_labels, test_labels = parse_dataset('D:/Documents/CMPT 464/', NUM_POINTS)
-    # np.save('train_points.npy', train_points)
-    # np.save('test_points.npy', test_points)
-    # np.save('train_labels.npy', train_labels)
-    # np.save('test_labels.npy', test_labels)
-    train_points = np.load('train_points.npy')
-    test_points = np.load('test_points.npy')
-    train_labels = np.load('train_labels.npy')
-    test_labels = np.load('test_labels.npy')
+        files = list(Path(args.dir).glob('**/*.obj'))
+        train_points, test_points, train_labels, test_labels = parse_dataset(files, NUM_POINTS)
+        np.save('train_points.npy', train_points)
+        np.save('test_points.npy', test_points)
+        np.save('train_labels.npy', train_labels)
+        np.save('test_labels.npy', test_labels)
+        # train_points = np.load('train_points.npy')
+        # test_points = np.load('test_points.npy')
+        # train_labels = np.load('train_labels.npy')
+        # test_labels = np.load('test_labels.npy')
 
-    train_dataset = tf.data.Dataset.from_tensor_slices((train_points, train_labels))
-    test_dataset = tf.data.Dataset.from_tensor_slices((test_points, test_labels))
+        train_dataset = tf.data.Dataset.from_tensor_slices((train_points, train_labels))
+        test_dataset = tf.data.Dataset.from_tensor_slices((test_points, test_labels))
 
-    train_dataset = train_dataset.shuffle(len(train_points)).map(augment).batch(BATCH_SIZE)
-    test_dataset = test_dataset.shuffle(len(test_points)).batch(BATCH_SIZE)
+        train_dataset = train_dataset.shuffle(len(train_points)).map(augment).batch(BATCH_SIZE)
+        test_dataset = test_dataset.shuffle(len(test_points)).batch(BATCH_SIZE)
 
-    # Define callbacks.
-    log_dir = "logs/fit/pointnet" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    tensorboard_cb = keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
-    checkpoint_cb = keras.callbacks.ModelCheckpoint(
-        "pointnet.h5", save_best_only=True
-    )
-    early_stopping_cb = keras.callbacks.EarlyStopping(
-        monitor="val_acc", patience=15)
+        # Define callbacks.
+        log_dir = "logs/fit/pointnet" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        tensorboard_cb = keras.callbacks.TensorBoard(
+            log_dir=log_dir, histogram_freq=1
+        )
+        checkpoint_cb = keras.callbacks.ModelCheckpoint(
+            "pointnet.h5", save_best_only=True
+        )
+        early_stopping_cb = keras.callbacks.EarlyStopping(
+            monitor="val_acc", patience=15
+        )
 
-    epochs = 100
-    model.fit(
-        train_dataset,
-        validation_data=test_dataset,
-        epochs=epochs,
-        callbacks=[checkpoint_cb, early_stopping_cb, tensorboard_cb],
-    )
+        epochs = 100
+        model.fit(
+            train_dataset,
+            validation_data=test_dataset,
+            epochs=epochs,
+            callbacks=[checkpoint_cb, early_stopping_cb, tensorboard_cb],
+        )
+
+    else:
+        custom_objects = {"OrthogonalRegularizer": OrthogonalRegularizer}
+        with keras.utils.custom_object_scope(custom_objects):
+            model = keras.models.load_model(args.load)
+
+        files = list(Path(args.dir).glob('**/*.obj'))
+        points = []
+        for file in files:
+            points.append(trimesh.load(file).sample(NUM_POINTS))
+
+        points = np.array(points)
+        result = model.predict(points)
+        for i, file in enumerate(files):
+            print("{}: {:.3f}%".format(file, result[i][0] * 100))
